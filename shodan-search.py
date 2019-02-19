@@ -46,6 +46,12 @@ def validate_ip(ip):
         print("Error: {} is not a valid ip address...".format(ip))
         sys.exit(1)
 
+def validate_limit(limit):
+    if limit > 500:
+        print("Limit greater than 500, setting to 500 to save query credits")
+        limit = 500
+    return limit
+        
 def generate_config(key):
     
     # validate the key
@@ -68,39 +74,29 @@ def generate_config(key):
     return True
 
 def print_console(data):
+    
     print("\nHost Info")
     print("-" * 30)
-    
+        
     # Loop through the matches and print each IP
-    for service in data['matches']:
-        print("IP: {}, Port: {}, Org: {}".format(service.get('ip_str', 'n/a'), service.get('port', 'n/a'), service.get('org', 'n/as')))
+    for service in data:
+        print("IP: {}, Port: {}, Org: {}".format(service.get('ip_str', 'n/a'), service.get('port', 'n/a'), service.get('org', 'n/a')))
 
     return True
     
-def generate_csv(data,csvname):
+def generate_csv(data,csvname,headers):
     # make sure file extension is .csv
     if csvname.endswith('.csv'):
         filename = csvname
     else:
         filename = csvname + ".csv"
 
-    # build a subset of the data
-    headers= ['ip_str', 'port', 'os', 'org', 'hostnames', 'domains', 'data']
-    csv_list = []
-    for service in data['matches']:
-        csv_row = {}
-        for x in headers:
-            if x in service.keys():
-                csv_row[x] = service[x]
-        csv_list.append(csv_row)
-
     with open(filename, 'w') as csvfile:
-        fieldnames = ['ip_str', 'port', 'os', 'org', 'hostnames', 'domains', 'data']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
 
         writer.writeheader()
-        for service in csv_list:
-            writer.writerow(service)
+        for row in data:
+            writer.writerow(row)
 
     print("\nResults written to {}...\n".format(filename))
     return True
@@ -144,7 +140,7 @@ def search_ip(ip, key):
         print("Error during Host search: {}".format(e))
         sys.exit(1)
 
-def search_query(query, key, csvname, console=False):
+def search_query(query, key, csvname, headers, console):
     # run query on shodan, return results
     # option to write to csv or print quickly to console
     
@@ -180,23 +176,63 @@ def search_query(query, key, csvname, console=False):
     # Print the summary info from the facets
     for facet in result['facets']:
         print(FACET_TITLES[facet])
-
         for term in result['facets'][facet]:
             print("{}: {}".format(term['value'], term['count']))
-
         print(" ")
 
-    # export to csv
-    generate_csv(result,csvname)
+    # build a subset of the data for csv
+    searchdata = []
+    for service in result['matches']:
+        data = {}
+        for x in headers:
+            if x in service.keys():
+                if type(service[x]) is list:
+                    temp = ', '.join(service[x])
+                    data[x] = temp
+                else:
+                    data[x] = service[x]
+        searchdata.append(data)
 
-    # print to console if console is True
-    if console == True:
-        print_console(result)
+    return searchdata
 
-    
-    
-    sleep(2) # sleep for 2 seconds, self rate limit
-    sys.exit(0)
+def search_download(query, key, csvname, limit, headers):
+    # run query on shodan and download the results up to the limit
+    # this uses query credits
+    # export results to csv when done. 
+
+    # validate limit <= 500
+    limit = validate_limit(limit)
+
+    counter = 0
+
+    api = shodan.Shodan(key)
+
+    searchdata = []
+
+    try:
+        for result in api.search_cursor(query):
+            data = {}
+            for x in headers:
+                if x in result.keys():
+                    if type(result[x]) is list:
+                        temp = ', '.join(result[x])
+                        data[x] = temp
+                    else:
+                        data[x] = result[x]
+
+            searchdata.append(data)
+
+            counter += 1
+
+            if counter >= limit:
+                print("Download limit of {} reached...".format(counter))
+                break
+    except Exception as e:
+        print("Error during Download: {}".format(e))
+        sys.exit(1)
+
+    return searchdata
+
 
 def search_summary(query, key):
     # run a query search on shodan, return a summary of results
@@ -257,6 +293,8 @@ def __main__():
     parser.add_argument('--query', '-q', dest='query', action=JoinQuery, nargs='+', help='shodan query to run')
     parser.add_argument('--summary', dest='summary', choices=['yes', 'no'], default='yes', help='run search in summary mode, saving search credits, defaults to yes.')
     parser.add_argument('--csv', dest='csvname', default='shodan.csv', help='csv file to export results to, defaults to shodan.csv')
+    parser.add_argument('--download', dest='download', action='store_true', help='download the results up to the specified --limit')
+    parser.add_argument('--limit', dest='limit', default=100, type=int, help='number of results to download, defaults to 100, max 500 (5 query credits)')
     parser.add_argument('--console', dest='console', action='store_true', default=False, help="print search results to the console")
     parser.add_argument('--info', dest='info', action='store_true', help='validate the shodan api key')
     parser.add_argument('--version', '-v', action='version', version='%(prog)s 1.0')
@@ -291,16 +329,25 @@ def __main__():
         # validate this is an ip
         validate_ip(args.ip)
         # run search    
-        search_ip(args.ip,args.key)
+        search_ip(args.ip, args.key)
+
+    # search by query
+    headers = ['ip_str', 'port', 'org', 'hostnames', 'domains', 'data']
 
     # run the search, either via summary or deep search if summary = no
-    if  args.query != None and args.summary == "yes":
-        search_summary(args.query,args.key)
+    if args.query != None and args.download:
+        data = search_download(args.query, args.key, args.csvname, args.limit, headers)
+        generate_csv(data,args.csvname,headers)
     elif args.query != None and args.summary == "no":
+        data = search_query(args.query,args.key,args.csvname,headers,args.console)
+        generate_csv(data,args.csvname,headers)
         if args.console:
-            search_query(args.query,args.key,args.csvname,console=True)
-        else:
-            search_query(args.query,args.key,args.csvname)
+            print_console(data)
+    else:
+        search_summary(args.query,args.key)
+    
 
 if __name__ == '__main__':
     __main__()
+
+ 

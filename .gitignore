@@ -5,3 +5,6 @@ shodan.cfg
 
 # ignore csv files
 *.csv
+
+# other
+*.DS_Store*

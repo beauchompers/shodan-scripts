@@ -7,12 +7,13 @@ Shall not be held responsible for what you do with these.
 ## Prerequisites
 
 Requires Python 3, and the following extra modules
-- Shodan (https://github.com/achillean/shodan-python)
-- IP Address (https://github.com/phihag/ipaddress)
 
-# Getting Started
+- [Shodan](https://github.com/achillean/shodan-python)
+- [IP Address](https://github.com/phihag/ipaddress)
 
-## shodan-search
+## Getting Started
+
+### shodan-search
 
 The 'shodan-search' script is pretty straight forward, it will usually return summary information for port, os, country, org, domain, or you can run a full search and export the results to CSV file.  
 
@@ -31,7 +32,7 @@ Run a search with and retrieve summary information:
 ./shodan-search.py --query net:192.168.8.0/24 --summary yes
 ```
 
-Run a full search and export to CSV, exports the ip, port, os, org, hostnames, domains, data by default:
+Run a full search and export to CSV (100 results), exports the ip, port, os, org, hostnames, domains, data by default:
 
 ```console
 ./shodan-search.py --query net:192.168.8.0/24 --summary no  # exports to shodan.csv
@@ -43,6 +44,12 @@ No need to quote the query:
 
 ```console
 ./shodan-search.py --query net:192.168.8.0/24 apache --summary no  
+```
+
+Download all results for a query, up to 500 (5 query credits):
+
+```console
+./shodan-search.py --query net:192.168.8.0/24 --download --limit 400  # download to the limit, or less if less.
 ```
 
 Search for a Host, get back the Org, Ports, and Banners etc:
@@ -95,9 +102,10 @@ optional arguments:
   --version, -v         show program's version number and exit
   ```
 
-# Author
+## Author
+
 [M. Beauchamp](https://github.com/beauchompers)
 
+## Acknowledgements
 
-# Acknowledgements
-- AChillean - https://github.com/achillean/shodan-python
+- [AChillean](https://github.com/achillean/shodan-python)

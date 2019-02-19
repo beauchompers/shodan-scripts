@@ -78,11 +78,11 @@ Full Usage can be found in the help:
 
 ```console
 ./shodan-search.py --help
-
 Shodan Search
 usage: shodan-search.py [-h] [--key KEY] [--generate-config] [--ip IP]
                         [--query QUERY [QUERY ...]] [--summary {yes,no}]
-                        [--csv CSVNAME] [--console] [--info] [--version]
+                        [--csv CSVNAME] [--download] [--limit LIMIT]
+                        [--console] [--info] [--version]
 
 Shodan Search Script
 
@@ -97,6 +97,9 @@ optional arguments:
   --summary {yes,no}    run search in summary mode, saving search credits,
                         defaults to yes.
   --csv CSVNAME         csv file to export results to, defaults to shodan.csv
+  --download            download the results up to the specified --limit
+  --limit LIMIT         number of results to download, defaults to 100, max
+                        500 (5 query credits)
   --console             print search results to the console
   --info                validate the shodan api key
   --version, -v         show program's version number and exit

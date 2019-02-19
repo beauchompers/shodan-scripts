@@ -1,0 +1,7 @@
+# git ignore file
+
+# ignore config file with api key
+shodan.cfg 
+
+# ignore csv files
+*.csv

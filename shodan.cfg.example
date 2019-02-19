@@ -1,0 +1,4 @@
+# example config file, which contains the api key
+# can use ./shodan-search.py --key putshodankeyhere --generate-config to create this file
+[shodan]
+key = putshodanapikeyhere

@@ -1,6 +1,6 @@
 # Shodan Scripts
 
-This repo contains script(s) for using the Shodan API.  Current script just performs searches and exports results to console or API.  Was a quick project for myself as I experimented with Shodan.io.
+This repo contains script(s) for using the Shodan API.  Current script just performs searches and exports results to console or a CSV file.  Was a quick project for myself as I experimented with Shodan.io.
 
 Shall not be held responsible for what you do with these.
 
